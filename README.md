@@ -4,8 +4,8 @@
 The current version of this app is very experimental. The generated user diagram will likely not be the prettiest you have ever seen.
 
 ## Installation guide
-To use this application, download the following file and run it in your preferred browser:
-[index.html](https://github.com/user-attachments/files/28165776/index.html)
+To use this application, download the Use_Case_Diagram_Generator zip, extract it, and run it in your preferred browser by opening the .html file:
+https://github.com/mvbdev1/UML_Use_Case_Diagram_Generator/releases/latest 
 
 
 ## User manual
