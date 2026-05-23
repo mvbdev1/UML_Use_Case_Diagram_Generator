@@ -1,7 +1,5 @@
 # UML_Use_Case_Diagram_Generator
 
-## Disclaimer
-The current version of this app is very experimental. The generated user diagram will likely not be the prettiest you have ever seen.
 
 ## Installation guide
 To use this application, download the Use_Case_Diagram_Generator zip, extract it, and run it in your preferred browser by opening the .html file:
@@ -10,6 +8,7 @@ https://github.com/mvbdev1/UML_Use_Case_Diagram_Generator/releases/latest
 
 ## User manual
 When opening the app, you will see a screen where the following can be added:
+ - A system
  - Actors (primary and secondary)
  - Use cases
  - Connections
