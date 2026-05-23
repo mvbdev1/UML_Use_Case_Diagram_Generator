@@ -107,7 +107,7 @@
         .flex-1 { flex: 1; }
         .w-32 { width: 8rem; }
 
-        button.btn-delete {
+        button.btn-change {
             background: transparent;
             border: none;
             color: var(--text-muted);
@@ -118,9 +118,9 @@
             border-radius: 4px;
         }
 
-        button.btn-delete:hover {
+        button.btn-change:hover {
             color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(68, 68, 239, 0.1);
         }
 
         .sidebar-sticky {
@@ -167,6 +167,13 @@
     </header>
 
     <main>
+        <div class="card">
+          <div class="card-title">System</div>
+          <div class="row-group">
+            <input type="text" id="system-name" class="flex-1 system-name" placeholder="My System">
+
+          </div>
+        </div>
         <!-- ACTORS CARD -->
         <div class="card">
             <div class="card-title">Actors</div>
@@ -201,10 +208,11 @@
 
 <script>
     // System Data Stores
+    let system = "";
     let actors = [{id: 'act_0', name: 'User', type: 'primary', inherits: ''}];
     let useCases = [{id: 'uc_0', name: 'Login to Account'}];
     let connections = [{id: 'conn_0', actorId: 'act_0', useCaseId: 'uc_0'}];
-
+    
     let idCounter = 1;
 
     function init() {
@@ -213,6 +221,9 @@
         renderConnections();
         updateSummary();
     }
+    document.getElementById('system-name').addEventListener('change', (e) => {
+                system = e.target.value;
+            });
 
     // Dynamic dropdown list synchronization
     function updateDropdowns() {
@@ -273,17 +284,15 @@
                     <option value="secondary" ${actor.type === 'secondary' ? 'selected' : ''}>Secondary</option>
                 </select>
                 <select class="flex-1 inherits-select" data-id="${actor.id}" data-val="${actor.inherits}"></select>
-                <button class="btn-delete" onclick="deleteRow('actor', '${actor.id}')">✕</button>
+                <button class="btn-change" onclick="deleteRow('actor', '${actor.id}')">✕</button>
+                <button class="btn-change" onclick="addRow('actor')">+</button>
             `;
             container.appendChild(row);
             
             // Attach input row auto-generation listeners
             row.querySelector('.actor-name').addEventListener('input', (e) => {
                 actor.name = e.target.value;
-                if (index === actors.length - 1 && e.target.value.trim() !== '') {
-                    actors.push({id: 'act_' + idCounter++, name: '', type: 'primary', inherits: ''});
-                    renderActors();
-                }
+               
                 updateDropdowns();
                 updateSummary();
             });
@@ -307,16 +316,14 @@
             row.className = 'form-row';
             row.innerHTML = `
                 <input type="text" class="flex-1 uc-name" data-id="${uc.id}" value="${uc.name}" placeholder="e.g. Process Payment">
-                <button class="btn-delete" onclick="deleteRow('uc', '${uc.id}')">✕</button>
+                <button class="btn-change" onclick="deleteRow('uc', '${uc.id}')">✕</button>
+                <button class="btn-change" onclick="addRow('uc')">+</button>
             `;
             container.appendChild(row);
 
             row.querySelector('.uc-name').addEventListener('input', (e) => {
                 uc.name = e.target.value;
-                if (index === useCases.length - 1 && e.target.value.trim() !== '') {
-                    useCases.push({id: 'uc_' + idCounter++, name: ''});
-                    renderUseCases();
-                }
+                
                 updateDropdowns();
                 updateSummary();
             });
@@ -325,42 +332,57 @@
     }
 
     function renderConnections() {
-        const container = document.getElementById('connections-container');
-        container.innerHTML = '';
-        connections.forEach((conn, index) => {
-            const row = document.createElement('div');
-            row.className = 'form-row';
-            row.innerHTML = `
-                <select class="flex-1 conn-actor-select" data-id="${conn.id}"></select>
-                <span style="color: var(--text-muted); font-size: 0.85rem;">connects to</span>
-                <select class="flex-1 conn-uc-select" data-id="${conn.id}"></select>
-                <button class="btn-delete" onclick="deleteRow('conn', '${conn.id}')">✕</button>
-            `;
-            container.appendChild(row);
+    const container = document.getElementById('connections-container');
+    if (!container) return;
+    container.innerHTML = '';
 
-            const actorSel = row.querySelector('.conn-actor-select');
-            const ucSel = row.querySelector('.conn-uc-select');
+    // 1. Pre-generate option strings so they exist in the DOM before we set .value
+    const actorOptionsHtml = `<option value="">-- Select Actor --</option>` + 
+        actors.filter(a => a.name.trim() !== '').map(a => `<option value="${a.id}">${escapeXml(a.name)}</option>`).join('');
+    
+    const ucOptionsHtml = `<option value="">-- Select Use Case --</option>` + 
+        useCases.filter(u => u.name.trim() !== '').map(u => `<option value="${u.id}">${escapeXml(u.name)}</option>`).join('');
 
-            actorSel.value = conn.actorId;
-            ucSel.value = conn.useCaseId;
+    connections.forEach((conn, index) => {
+        const row = document.createElement('div');
+        row.className = 'form-row';
+        row.innerHTML = `
+            <select class="flex-1 conn-actor-select" data-id="${conn.id}">
+                ${actorOptionsHtml}
+            </select>
+            <span style="color: var(--text-muted); font-size: 0.85rem;">connects to</span>
+            <select class="flex-1 conn-uc-select" data-id="${conn.id}">
+                ${ucOptionsHtml}
+            </select>
+            <button class="btn-change" onclick="deleteRow('conn', '${conn.id}')">✕</button>
+            <button class="btn-change" onclick="addRow('conn')">+</button>
+        `;
+        container.appendChild(row);
 
-            const changeHandler = () => {
-                conn.actorId = actorSel.value;
-                conn.useCaseId = ucSel.value;
-                if (index === connections.length - 1 && conn.actorId && conn.useCaseId) {
-                    connections.push({id: 'conn_' + idCounter++, actorId: '', useCaseId: ''});
-                    renderConnections();
-                }
-                updateSummary();
-            };
+        const actorSel = row.querySelector('.conn-actor-select');
+        const ucSel = row.querySelector('.conn-uc-select');
 
-            actorSel.addEventListener('change', changeHandler);
-            ucSel.addEventListener('change', changeHandler);
+        // 2. Safely apply values now that the options actually exist
+        actorSel.value = conn.actorId || '';
+        ucSel.value = conn.useCaseId || '';
+
+        // 3. Consolidated event listeners to prevent duplicate triggers
+        actorSel.addEventListener('change', (e) => {
+            conn.actorId = e.target.value;
+            updateSummary();
+            if (typeof changeHandler === 'function') changeHandler(e);
         });
-        updateDropdowns();
-    }
 
-    function deleteRow(type, id) {
+        ucSel.addEventListener('change', (e) => {
+            conn.useCaseId = e.target.value;
+            updateSummary();
+            if (typeof changeHandler === 'function') changeHandler(e);
+        });
+    });
+
+    // Run fallback updates if your layout depends on it globally
+    if (typeof updateDropdowns === 'function') updateDropdowns();
+}    function deleteRow(type, id) {
         if (type === 'actor') {
             if (actors.length > 1) {
                 actors = actors.filter(a => a.id !== id);
@@ -385,111 +407,160 @@
         updateSummary();
     }
 
+    function addRow(type) {
+        if (type === 'actor') {
+              actors.push({id: 'act_' + idCounter++, name: '', type: 'primary', inherits: ''});
+              renderActors();
+              renderConnections();
+        } else if (type === 'uc') {
+           
+              useCases.push({id: 'uc_' + idCounter++, name: ''});
+              renderUseCases();
+        } else if (type === 'conn') {
+              connections.push({id: 'conn_' + idCounter++, actorId: '', useCaseId: ''});
+              renderConnections();
+        }
+        updateSummary();
+    }
     // --- DRAW.IO CORE XML GENERATION ENGINE ---
-    function exportToDrawio() {
-        const validActors = actors.filter(a => a.name.trim() !== '');
-        const validUCs = useCases.filter(u => u.name.trim() !== '');
-        const validConns = connections.filter(c => c.actorId && c.useCaseId);
+   function exportToDrawio() {
+    const validActors = actors.filter(a => a.name.trim() !== '');
+    const validUCs = useCases.filter(u => u.name.trim() !== '');
+    const validConns = connections.filter(c => c.actorId && c.useCaseId);
+  
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<mxfile host="app.diagrams.net">\n`;
+    xml += `  <diagram name="Page-1" id="XwSXomkLUSkmTKb47o0F">\n`;
+    xml += `    <mxGraphModel dx="2021" dy="1549" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">\n`;
+    xml += `      <root>\n`;
+    xml += `        <mxCell id="0" />\n`;
+    xml += `        <mxCell id="1" parent="0" />\n`;
 
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-        xml += `<mxfile host="Electron" version="24.0.0" type="device">\n`;
-        xml += `  <diagram id="UseCaseDiagram" name="Generated Diagram">\n`;
-        xml += `    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">\n`;
-        xml += `      <root>\n`;
-        xml += `        <mxCell id="0" />\n`;
-        xml += `        <mxCell id="1" parent="0" />\n`;
+    // 1. System Boundary Box (Dynamic Height Calculation)
+    const systemHeight = 20 + (validUCs.length * 60);
+    xml += `        <mxCell id="LJ0lisYWUPYzpD8U1sXA-1" parent="1" style="html=1;whiteSpace=wrap;align=center;labelPosition=center;verticalLabelPosition=top;verticalAlign=bottom;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="${escapeXml(system)}" vertex="1">\n`;
+    xml += `          <mxGeometry height="${systemHeight}" width="150" x="-400" y="120" as="geometry" />\n`;
+    xml += `        </mxCell>\n`;
 
-        let primaryCount = 0;
-        let secondaryCount = 0;
-        const actorPositions = {};
+    let primaryCount = 0;
+    let secondaryCount = 0;
+    const actorPositions = {};
 
-        // 1. Structural Mapping: Process Actors
-        validActors.forEach(actor => {
-            let x = 80;
-            let y = 100;
+    // 2. Structural Mapping: Process Actors
+    validActors.forEach(actor => {
+        let x = -560;
+        let y = 140;
 
-            if (actor.type === 'primary') {
-                y += primaryCount * 160;
-                primaryCount++;
+        // Check if this actor acts as a base class/parent for others
+        const isBaseActor = validActors.some(a => a.inherits === actor.id);
+        
+        if (actor.type === 'primary') {
+            if (isBaseActor) {
+                // Pin the shared base actor to the outermost left track column
+                x = -640;
+                y = 140;
             } else {
-                x = 680; // Secondary outer track column
-                y += secondaryCount * 160;
-                secondaryCount++;
+                // Stack specific primary actors below it
+                y = 220 + (primaryCount * 130);
+                primaryCount++;
             }
+        } else {
+            // Right-aligned column track for secondary actors / APIs
+            x = -120;
+            y = 340 + (secondaryCount * 190);
+            secondaryCount++;
+        }
 
-            actorPositions[actor.id] = { x: x, y: y, type: actor.type };
+        actorPositions[actor.id] = { x: x, y: y, type: actor.type };
 
-            xml += `        <mxCell id="${actor.id}" value="${escapeXml(actor.name)}" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;whiteSpace=wrap;" vertex="1" parent="1">\n`;
-            xml += `          <mxGeometry x="${x}" y="${y}" width="30" height="60" as="geometry" />\n`;
+        let actorStyle = `shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;`;
+        if (isBaseActor) {
+            actorStyle = `shape=umlActor;verticalLabelPosition=middle;verticalAlign=middle;html=1;labelPosition=left;align=right;`;
+        }
+
+        xml += `        <mxCell id="${actor.id}" value="${escapeXml(actor.name)}" style="${actorStyle}" vertex="1" parent="1">\n`;
+        xml += `          <mxGeometry x="${x}" y="${y}" width="30" height="60" as="geometry" />\n`;
+        xml += `        </mxCell>\n`;
+    });
+
+    // 3. Structural Mapping: Process Vertical Center-aligned Use Cases
+    validUCs.forEach((uc, index) => {
+        const x = -395; 
+        const y = 130 + (index * 60); 
+
+        xml += `        <mxCell id="${uc.id}" value="${escapeXml(uc.name)}" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">\n`;
+        xml += `          <mxGeometry x="${x}" y="${y}" width="140" height="50" as="geometry" />\n`;
+        xml += `        </mxCell>\n`;
+    });
+
+    // 4. Connection Mapping: Relationship Edges
+    validConns.forEach((conn, index) => {
+        const actorPos = actorPositions[conn.actorId];
+        let entryX = "0";
+
+        // Route nicely into the right side of the ellipse if the actor sits on the right
+        if (actorPos && actorPos.type !== 'primary') {
+            entryX = "1";
+        }
+
+        let edgeStyle = `edgeStyle=entityRelationEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=${entryX};entryY=0.5;entryDx=0;entryDy=0;`;
+
+        xml += `        <mxCell id="edge_${index}" style="${edgeStyle}" source="${conn.actorId}" target="${conn.useCaseId}" edge="1" parent="1">\n`;
+        xml += `          <mxGeometry relative="1" as="geometry" />\n`;
+        xml += `        </mxCell>\n`;
+    });
+
+    // 5. Inheritance Structural Links
+    validActors.forEach((actor, index) => {
+        if (actor.inherits && actorPositions[actor.inherits]) {
+            const sourcePos = actorPositions[actor.id];
+            const targetPos = actorPositions[actor.inherits];
+            
+            // Mathematically compute the orthogonal inflection point
+            const midX = targetPos.x + 15;
+            const midY = sourcePos.y + 30;
+
+            const inheritStyle = `endArrow=block;endSize=16;endFill=0;html=1;rounded=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;`;
+            
+            xml += `        <mxCell id="inherits_${index}" style="${inheritStyle}" source="${actor.id}" target="${actor.inherits}" edge="1" parent="1">\n`;
+            xml += `          <mxGeometry relative="1" width="160" as="geometry">\n\n`;
+            xml += `            <Array as="points">\n`;
+            xml += `              <mxPoint x="${midX}" y="${midY}" />\n`;
+            xml += `            </Array>\n`;
+            xml += `          </mxGeometry>\n`;
             xml += `        </mxCell>\n`;
-        });
+        }
+    });
 
-        // 2. Structural Mapping: Process Clean Vertical Center-aligned Use Cases
-        validUCs.forEach((uc, index) => {
-            const x = 340; 
-            const y = 80 + (index * 110); // Strictly stacked line index orientation
+    xml += `      </root>\n`;
+    xml += `    </mxGraphModel>\n`;
+    xml += `  </diagram>\n`;
+    xml += `</mxfile>\n`;
 
-            xml += `        <mxCell id="${uc.id}" value="${escapeXml(uc.name)}" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">\n`;
-            xml += `          <mxGeometry x="${x}" y="${y}" width="140" height="70" as="geometry" />\n`;
-            xml += `        </mxCell>\n`;
-        });
+    // Execution of File Delivery Engine
+    const blob = new Blob([xml], { type: 'text/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'use-case-diagram.drawio';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
-        // 3. Connection Mapping: Core S-curve Relationship Tracks
-        validConns.forEach((conn, index) => {
-            const actorPos = actorPositions[conn.actorId];
-            let edgeStyle = `edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;html=1;endArrow=none;`;
-
-            // Adjust terminal directional exits cleanly based on structural placement matrix
-            if (actorPos && actorPos.type === 'primary') {
-                edgeStyle += `exitX=1;exitY=0.333;entryX=0;entryY=0.5;`;
-            } else if (actorPos) {
-                edgeStyle += `exitX=0;exitY=0.333;entryX=1;entryY=0.5;`;
-            }
-
-            xml += `        <mxCell id="edge_${index}" style="${edgeStyle}" source="${conn.actorId}" target="${conn.useCaseId}" edge="1" parent="1">\n`;
-            xml += `          <mxGeometry relative="1" as="geometry" />\n`;
-            xml += `        </mxCell>\n`;
-        });
-
-        // 4. Inheritance Structural Links
-        validActors.forEach((actor, index) => {
-            if (actor.inherits && actorPositions[actor.inherits]) {
-                const inheritStyle = `endArrow=block;endSize=12;endFill=0;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;`;
-                xml += `        <mxCell id="inherits_${index}" style="${inheritStyle}" source="${actor.id}" target="${actor.inherits}" edge="1" parent="1">\n`;
-                xml += `          <mxGeometry relative="1" as="geometry" />\n`;
-                xml += `        </mxCell>\n`;
-            }
-        });
-
-        xml += `      </root>\n`;
-        xml += `    </mxGraphModel>\n`;
-        xml += `  </diagram>\n`;
-        xml += `</mxfile>\n`;
-
-        // Execution of File Delivery Engine
-        const blob = new Blob([xml], { type: 'text/xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'use-case-diagram.drawio';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    function escapeXml(str) {
-        return str.replace(/[<>&'"]/g, (c) => {
-            switch (c) {
-                case '<': return '&lt;';
-                case '>': return '&gt;';
-                case '&': return '&amp;';
-                case '\'': return '&apos;';
-                case '"': return '&quot;';
-            }
-        });
-    }
-
+function escapeXml(str) {
+    if (!str) return '';
+    return str.replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+        }
+    });
+}
     // Launch Application instance
     window.onload = init;
 </script>
