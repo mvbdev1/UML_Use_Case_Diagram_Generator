@@ -1,1 +1,18 @@
 # UML_Use_Case_Diagram_Generator
+
+## Disclaimer
+The current version of this app is very experimental. The generated user diagram will likely not be the prettiest you have ever seen.
+
+## Installation guide
+To use this application, download the following file and run it in your preferred browser:
+[index.html](https://github.com/user-attachments/files/28165776/index.html)
+
+
+## User manual
+When opening the app, you will see a screen where the following can be added:
+ - Actors (primary and secondary)
+ - Use cases
+ - Connections
+   
+When all of these have been filled in to your liking, export them using the 'Generate & Download' button. This will give you a .drawio file. This can be opened on https://www.drawio.com/ by clicking File > Open From > Device > your designated folder (/Downloads by default) > your_use_case_diagram.drawio
+
