@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UML Use Case to Draw.io Generator</title>
+    <style>
+        :root {
+            --bg-app: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --danger: #ef4444;
+            --border: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        header {
+            grid-column: 1 / -1;
+            margin-bottom: 1rem;
+        }
+
+        h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        p.subtitle { color: var(--text-muted); font-size: 0.95rem; }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .row-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        input, select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        .flex-1 { flex: 1; }
+        .w-32 { width: 8rem; }
+
+        button.btn-delete {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            font-size: 1.1rem;
+            line-height: 1;
+            border-radius: 4px;
+        }
+
+        button.btn-delete:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .sidebar-sticky {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+        }
+
+        button.btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        button.btn-primary:hover { background: var(--accent-hover); }
+        button.btn-primary:active { transform: scale(0.98); }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .summary-item:last-child { border-bottom: none; }
+        .summary-item span.count { color: var(--text-main); font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>UML Use Case Generator</h1>
+        <p class="subtitle">Design structural logic seamlessly and export directly into clean Draw.io formats.</p>
+    </header>
+
+    <main>
+        <!-- ACTORS CARD -->
+        <div class="card">
+            <div class="card-title">Actors</div>
+            <div id="actors-container" class="row-group"></div>
+        </div>
+
+        <!-- USE CASES CARD -->
+        <div class="card">
+            <div class="card-title">Use Cases</div>
+            <div id="usecases-container" class="row-group"></div>
+        </div>
+
+        <!-- CONNECTIONS CARD -->
+        <div class="card">
+            <div class="card-title">Connections (Actor to Use Case)</div>
+            <div id="connections-container" class="row-group"></div>
+        </div>
+    </main>
+
+    <aside class="sidebar-sticky">
+        <div class="card">
+            <div class="card-title">Diagram Actions</div>
+            <div style="margin-bottom: 1.5rem;">
+                <div class="summary-item">Total Actors <span class="count" id="count-actors">0</span></div>
+                <div class="summary-item">Total Use Cases <span class="count" id="count-usecases">0</span></div>
+                <div class="summary-item">Active Connections <span class="count" id="count-connections">0</span></div>
+            </div>
+            <button class="btn-primary" onclick="exportToDrawio()">Generate & Download</button>
+        </div>
+    </aside>
+</div>
+
+<script>
+    // System Data Stores
+    let actors = [{id: 'act_0', name: 'User', type: 'primary', inherits: ''}];
+    let useCases = [{id: 'uc_0', name: 'Login to Account'}];
+    let connections = [{id: 'conn_0', actorId: 'act_0', useCaseId: 'uc_0'}];
+
+    let idCounter = 1;
+
+    function init() {
+        renderActors();
+        renderUseCases();
+        renderConnections();
+        updateSummary();
+    }
+
+    // Dynamic dropdown list synchronization
+    function updateDropdowns() {
+        const validActors = actors.filter(a => a.name.trim() !== '');
+        const validUCs = useCases.filter(u => u.name.trim() !== '');
+
+        // Sync actor inheritance items
+        document.querySelectorAll('.inherits-select').forEach(select => {
+            const currentVal = select.value;
+            const rowId = select.dataset.id;
+            select.innerHTML = '<option value="">No Inheritance</option>';
+            validActors.forEach(act => {
+                if(act.id !== rowId) {
+                    select.innerHTML += `<option value="${act.id}">${act.name}</option>`;
+                }
+            });
+            select.value = currentVal;
+        });
+
+        // Sync connection source elements
+        document.querySelectorAll('.conn-actor-select').forEach(select => {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Select Actor</option>';
+            validActors.forEach(act => {
+                select.innerHTML += `<option value="${act.id}">${act.name}</option>`;
+            });
+            select.value = currentVal;
+        });
+
+        // Sync connection target elements
+        document.querySelectorAll('.conn-uc-select').forEach(select => {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Select Use Case</option>';
+            validUCs.forEach(uc => {
+                select.innerHTML += `<option value="${uc.id}">${uc.name}</option>`;
+            });
+            select.value = currentVal;
+        });
+    }
+
+    function updateSummary() {
+        document.getElementById('count-actors').innerText = actors.filter(a => a.name.trim()).length;
+        document.getElementById('count-usecases').innerText = useCases.filter(u => u.name.trim()).length;
+        document.getElementById('count-connections').innerText = connections.filter(c => c.actorId && c.useCaseId).length;
+    }
+
+    // --- RENDER ENGINES ---
+    function renderActors() {
+        const container = document.getElementById('actors-container');
+        container.innerHTML = '';
+        actors.forEach((actor, index) => {
+            const row = document.createElement('div');
+            row.className = 'form-row';
+            row.innerHTML = `
+                <input type="text" class="flex-1 actor-name" data-id="${actor.id}" value="${actor.name}" placeholder="e.g. Customer">
+                <select class="w-32 actor-type" data-id="${actor.id}">
+                    <option value="primary" ${actor.type === 'primary' ? 'selected' : ''}>Primary</option>
+                    <option value="secondary" ${actor.type === 'secondary' ? 'selected' : ''}>Secondary</option>
+                </select>
+                <select class="flex-1 inherits-select" data-id="${actor.id}" data-val="${actor.inherits}"></select>
+                <button class="btn-delete" onclick="deleteRow('actor', '${actor.id}')">✕</button>
+            `;
+            container.appendChild(row);
+            
+            // Attach input row auto-generation listeners
+            row.querySelector('.actor-name').addEventListener('input', (e) => {
+                actor.name = e.target.value;
+                if (index === actors.length - 1 && e.target.value.trim() !== '') {
+                    actors.push({id: 'act_' + idCounter++, name: '', type: 'primary', inherits: ''});
+                    renderActors();
+                }
+                updateDropdowns();
+                updateSummary();
+            });
+
+            row.querySelector('.actor-type').addEventListener('change', (e) => {
+                actor.type = e.target.value;
+            });
+
+            row.querySelector('.inherits-select').addEventListener('change', (e) => {
+                actor.inherits = e.target.value;
+            });
+        });
+        updateDropdowns();
+    }
+
+    function renderUseCases() {
+        const container = document.getElementById('usecases-container');
+        container.innerHTML = '';
+        useCases.forEach((uc, index) => {
+            const row = document.createElement('div');
+            row.className = 'form-row';
+            row.innerHTML = `
+                <input type="text" class="flex-1 uc-name" data-id="${uc.id}" value="${uc.name}" placeholder="e.g. Process Payment">
+                <button class="btn-delete" onclick="deleteRow('uc', '${uc.id}')">✕</button>
+            `;
+            container.appendChild(row);
+
+            row.querySelector('.uc-name').addEventListener('input', (e) => {
+                uc.name = e.target.value;
+                if (index === useCases.length - 1 && e.target.value.trim() !== '') {
+                    useCases.push({id: 'uc_' + idCounter++, name: ''});
+                    renderUseCases();
+                }
+                updateDropdowns();
+                updateSummary();
+            });
+        });
+        updateDropdowns();
+    }
+
+    function renderConnections() {
+        const container = document.getElementById('connections-container');
+        container.innerHTML = '';
+        connections.forEach((conn, index) => {
+            const row = document.createElement('div');
+            row.className = 'form-row';
+            row.innerHTML = `
+                <select class="flex-1 conn-actor-select" data-id="${conn.id}"></select>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">connects to</span>
+                <select class="flex-1 conn-uc-select" data-id="${conn.id}"></select>
+                <button class="btn-delete" onclick="deleteRow('conn', '${conn.id}')">✕</button>
+            `;
+            container.appendChild(row);
+
+            const actorSel = row.querySelector('.conn-actor-select');
+            const ucSel = row.querySelector('.conn-uc-select');
+
+            actorSel.value = conn.actorId;
+            ucSel.value = conn.useCaseId;
+
+            const changeHandler = () => {
+                conn.actorId = actorSel.value;
+                conn.useCaseId = ucSel.value;
+                if (index === connections.length - 1 && conn.actorId && conn.useCaseId) {
+                    connections.push({id: 'conn_' + idCounter++, actorId: '', useCaseId: ''});
+                    renderConnections();
+                }
+                updateSummary();
+            };
+
+            actorSel.addEventListener('change', changeHandler);
+            ucSel.addEventListener('change', changeHandler);
+        });
+        updateDropdowns();
+    }
+
+    function deleteRow(type, id) {
+        if (type === 'actor') {
+            if (actors.length > 1) {
+                actors = actors.filter(a => a.id !== id);
+                connections = connections.filter(c => c.actorId !== id);
+                actors.forEach(a => { if(a.inherits === id) a.inherits = ''; });
+                renderActors();
+                renderConnections();
+            }
+        } else if (type === 'uc') {
+            if (useCases.length > 1) {
+                useCases = useCases.filter(u => u.id !== id);
+                connections = connections.filter(c => c.useCaseId !== id);
+                renderUseCases();
+                renderConnections();
+            }
+        } else if (type === 'conn') {
+            if (connections.length > 1) {
+                connections = connections.filter(c => c.id !== id);
+                renderConnections();
+            }
+        }
+        updateSummary();
+    }
+
+    // --- DRAW.IO CORE XML GENERATION ENGINE ---
+    function exportToDrawio() {
+        const validActors = actors.filter(a => a.name.trim() !== '');
+        const validUCs = useCases.filter(u => u.name.trim() !== '');
+        const validConns = connections.filter(c => c.actorId && c.useCaseId);
+
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<mxfile host="Electron" version="24.0.0" type="device">\n`;
+        xml += `  <diagram id="UseCaseDiagram" name="Generated Diagram">\n`;
+        xml += `    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">\n`;
+        xml += `      <root>\n`;
+        xml += `        <mxCell id="0" />\n`;
+        xml += `        <mxCell id="1" parent="0" />\n`;
+
+        let primaryCount = 0;
+        let secondaryCount = 0;
+        const actorPositions = {};
+
+        // 1. Structural Mapping: Process Actors
+        validActors.forEach(actor => {
+            let x = 80;
+            let y = 100;
+
+            if (actor.type === 'primary') {
+                y += primaryCount * 160;
+                primaryCount++;
+            } else {
+                x = 680; // Secondary outer track column
+                y += secondaryCount * 160;
+                secondaryCount++;
+            }
+
+            actorPositions[actor.id] = { x: x, y: y, type: actor.type };
+
+            xml += `        <mxCell id="${actor.id}" value="${escapeXml(actor.name)}" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;whiteSpace=wrap;" vertex="1" parent="1">\n`;
+            xml += `          <mxGeometry x="${x}" y="${y}" width="30" height="60" as="geometry" />\n`;
+            xml += `        </mxCell>\n`;
+        });
+
+        // 2. Structural Mapping: Process Clean Vertical Center-aligned Use Cases
+        validUCs.forEach((uc, index) => {
+            const x = 340; 
+            const y = 80 + (index * 110); // Strictly stacked line index orientation
+
+            xml += `        <mxCell id="${uc.id}" value="${escapeXml(uc.name)}" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">\n`;
+            xml += `          <mxGeometry x="${x}" y="${y}" width="140" height="70" as="geometry" />\n`;
+            xml += `        </mxCell>\n`;
+        });
+
+        // 3. Connection Mapping: Core S-curve Relationship Tracks
+        validConns.forEach((conn, index) => {
+            const actorPos = actorPositions[conn.actorId];
+            let edgeStyle = `edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;html=1;endArrow=none;`;
+
+            // Adjust terminal directional exits cleanly based on structural placement matrix
+            if (actorPos && actorPos.type === 'primary') {
+                edgeStyle += `exitX=1;exitY=0.333;entryX=0;entryY=0.5;`;
+            } else if (actorPos) {
+                edgeStyle += `exitX=0;exitY=0.333;entryX=1;entryY=0.5;`;
+            }
+
+            xml += `        <mxCell id="edge_${index}" style="${edgeStyle}" source="${conn.actorId}" target="${conn.useCaseId}" edge="1" parent="1">\n`;
+            xml += `          <mxGeometry relative="1" as="geometry" />\n`;
+            xml += `        </mxCell>\n`;
+        });
+
+        // 4. Inheritance Structural Links
+        validActors.forEach((actor, index) => {
+            if (actor.inherits && actorPositions[actor.inherits]) {
+                const inheritStyle = `endArrow=block;endSize=12;endFill=0;html=1;edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;`;
+                xml += `        <mxCell id="inherits_${index}" style="${inheritStyle}" source="${actor.id}" target="${actor.inherits}" edge="1" parent="1">\n`;
+                xml += `          <mxGeometry relative="1" as="geometry" />\n`;
+                xml += `        </mxCell>\n`;
+            }
+        });
+
+        xml += `      </root>\n`;
+        xml += `    </mxGraphModel>\n`;
+        xml += `  </diagram>\n`;
+        xml += `</mxfile>\n`;
+
+        // Execution of File Delivery Engine
+        const blob = new Blob([xml], { type: 'text/xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'use-case-diagram.drawio';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function escapeXml(str) {
+        return str.replace(/[<>&'"]/g, (c) => {
+            switch (c) {
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '&': return '&amp;';
+                case '\'': return '&apos;';
+                case '"': return '&quot;';
+            }
+        });
+    }
+
+    // Launch Application instance
+    window.onload = init;
+</script>
+</body>
+</html>
