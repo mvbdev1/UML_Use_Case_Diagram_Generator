@@ -278,7 +278,7 @@
             const row = document.createElement('div');
             row.className = 'form-row';
             row.innerHTML = `
-                <input type="text" class="flex-1 actor-name" data-id="${actor.id}" value="${actor.name}" placeholder="e.g. Customer">
+                <input type="text" class="flex-1 actor-name" data-id="${actor.id}" value="${escapeXml(actor.name)}" placeholder="e.g. Customer">
                 <select class="w-32 actor-type" data-id="${actor.id}">
                     <option value="primary" ${actor.type === 'primary' ? 'selected' : ''}>Primary</option>
                     <option value="secondary" ${actor.type === 'secondary' ? 'selected' : ''}>Secondary</option>
@@ -315,7 +315,7 @@
             const row = document.createElement('div');
             row.className = 'form-row';
             row.innerHTML = `
-                <input type="text" class="flex-1 uc-name" data-id="${uc.id}" value="${uc.name}" placeholder="e.g. Process Payment">
+                <input type="text" class="flex-1 uc-name" data-id="${uc.id}" value="${escapeXml(uc.name)}" placeholder="e.g. Process Payment">
                 <button class="btn-change" onclick="deleteRow('uc', '${uc.id}')">✕</button>
                 <button class="btn-change" onclick="addRow('uc')">+</button>
             `;
