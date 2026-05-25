@@ -3,7 +3,7 @@
 An installation isn't necessary, this website can be visited at: https://mvbdev1.github.io/UML_Use_Case_Diagram_Generator/ 
 
 ## Installation guide
-However, if you want it locally, download the Use_Case_Diagram_Generator zip, extract it, and run it in your preferred browser by opening the .html file:
+However, if you want it locally, download the source code zip, extract it, and run it in your preferred browser by opening the .html file:
 https://github.com/mvbdev1/UML_Use_Case_Diagram_Generator/releases/latest 
 
 
